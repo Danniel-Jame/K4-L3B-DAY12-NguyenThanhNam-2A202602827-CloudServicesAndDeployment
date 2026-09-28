@@ -35,10 +35,23 @@ services:
       timeout: 3s
       retries: 5
 
-  # TODO (CP2): khai báo service `agent` ở đây
-  # agent:
-  #   build: .
-  #   ...
+  agent:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Đọc khóa bí mật từ file .env, không ghi trực tiếp giá trị vào đây
+      AGENT_API_KEY: ${AGENT_API_KEY}
+      # Container gọi nhau qua tên service, nên hostname là `redis`
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+    healthcheck:
+      # Dùng script Python thuần có sẵn để gọi /health, tránh phụ thuộc vào lệnh curl
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   redis-data:
