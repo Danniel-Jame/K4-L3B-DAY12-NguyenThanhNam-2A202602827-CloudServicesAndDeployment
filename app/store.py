@@ -51,7 +51,12 @@ class ConversationStore:
         Trả ``True`` nếu thành công, ``False`` nếu có bất kỳ Exception nào
         (mất mạng, sai mật khẩu, Redis chưa khởi động...).
         """
-        raise NotImplementedError("TODO (CP4): cài đặt ping")
+        try:
+            # ping() của redis-py/fakeredis trả về True nếu kết nối ổn
+            return bool(self.client.ping())
+        except Exception:
+            # Bắt mọi Exception để tránh làm sập ứng dụng (tránh trả về 500)
+            return False
 
     def append(self, user_id: str, role: str, content: str) -> None:
         """Ghi thêm một lượt vào lịch sử.
@@ -65,7 +70,17 @@ class ConversationStore:
           3. ``self.client.expire(key, HISTORY_TTL_SECONDS)`` — hội thoại cũ
              tự hết hạn, khỏi phải dọn tay.
         """
-        raise NotImplementedError("TODO (CP4): cài đặt append")
+        key = self._key(user_id)
+        message = json.dumps({"role": role, "content": content}, ensure_ascii=False)
+        
+        # 1. Đẩy tin nhắn mới vào cuối (right-push) của Redis List
+        self.client.rpush(key, message)
+        
+        # 2. Giới hạn số lượng tin nhắn (chỉ giữ n phần tử cuối cùng)
+        self.client.ltrim(key, -HISTORY_MAX_MESSAGES, -1)
+        
+        # 3. Đặt thời gian sống cho lịch sử hội thoại
+        self.client.expire(key, HISTORY_TTL_SECONDS)
 
     def get_history(self, user_id: str) -> list[dict]:
         """Đọc lịch sử hội thoại, cũ nhất trước.
@@ -73,7 +88,16 @@ class ConversationStore:
         TODO (CP4): ``self.client.lrange(key, 0, -1)`` rồi ``json.loads``
         từng phần tử. Chưa có gì → trả về list rỗng.
         """
-        raise NotImplementedError("TODO (CP4): cài đặt get_history")
+        key = self._key(user_id)
+        
+        # Lấy toàn bộ phần tử trong Redis List
+        raw_items = self.client.lrange(key, 0, -1)
+        
+        if not raw_items:
+            return []
+            
+        # Parse từng chuỗi JSON thành dictionary
+        return [json.loads(item) for item in raw_items]
 
     def clear(self, user_id: str) -> None:
         """CHO SẴN — xóa lịch sử của một user."""
