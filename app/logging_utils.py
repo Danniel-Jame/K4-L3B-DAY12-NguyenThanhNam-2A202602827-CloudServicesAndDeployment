@@ -34,4 +34,21 @@ def log_event(event: str, level: str = "info", **fields) -> str:
         >>> log_event("ask_completed", user_id="sv01", cost_usd=0.0001)
         '{"event": "ask_completed", "level": "info", "timestamp": "...", ...}'
     """
-    raise NotImplementedError("TODO (CP1): cài đặt log_event")
+    # Khởi tạo dict với 3 khóa bắt buộc
+    log_data = {
+        "event": event,
+        "level": level.lower(),
+        "timestamp": utc_now_iso()
+    }
+    
+    # Gộp thêm các cặp key/value từ fields
+    log_data.update(fields)
+    
+    # Chuyển đổi thành chuỗi JSON trên một dòng duy nhất, hỗ trợ ký tự Unicode tiếng Việt
+    log_string = json.dumps(log_data, ensure_ascii=False)
+    
+    # In ra stdout
+    print(log_string)
+    
+    # Trả về chuỗi JSON
+    return log_string
