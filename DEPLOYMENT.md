@@ -83,6 +83,7 @@ Dán output của các lệnh trên vào đây:
 Đặt ảnh trong thư mục `screenshots/`:
 
 - `screenshots/dashboard.png` — trang quản lý service trên platform
+- `build logs.png` — trang quản lý service trên platform
 - `screenshots/health.png` — kết quả gọi `/health` từ trình duyệt hoặc curl
 - `screenshots/ready.png` — kết quả gọi `/ready` từ trình duyệt hoặc curl
 
